@@ -103,7 +103,7 @@ def scrape(smiles):
 
 
 # Read the input data from a CSV file
-df = pd.read_csv('test_input.csv')
+df = pd.read_csv('input.csv')
 
 # Initialize the WebDriver and configure timeout
 driver = setup()
