@@ -3,3 +3,5 @@ Python Web Scraping Program to Automate queries and results on BitterX website
 
 @Authors: 
 Deep Patel, Amritansh Ayachi
+
+To utilize the program, you can add a csv file with name "input.csv" into the same directory as the main.py file. Upon succesful execution of the program, the directory will have a "output.csv" file with results of the queries. 
