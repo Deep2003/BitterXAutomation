@@ -93,8 +93,8 @@ def scrape(smiles):
                 # Store the probability value for the given SMILES
                 df.loc[df["SMILES"] == smiles, bitter_id] = probability
 
-            # Go back to the main page
-            driver.back()
+        # Go back to the main page
+        driver.back()
 
     except NoSuchElementException:
         # In case of an element not found, try to go back and scrape again
