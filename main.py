@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
-
+import argparse
 
 # Function to set up the webdriver and open the webpage
 def setup():
@@ -102,8 +102,30 @@ def scrape(smiles):
         scrape(smiles)
 
 
+# default files
+input_file = "input.csv"
+output_file = "output.csv"
+
+# Initialize command line parser
+parser = argparse.ArgumentParser()
+
+# Add optional arguments
+parser.add_argument("-i", "--Input", help = "Input File")
+parser.add_argument("-o", "--Output", help = "Output File")
+
+# Read arguments from command line
+args = parser.parse_args()
+
+# Parse arguments and assign files accordingly
+if args.Input:
+    input_file = args.Input
+    print("Input File: % s" % args.Input)
+if args.Output:
+    output_file = args.Output
+    print("Output File: % s" % args.Output)
+
 # Read the input data from a CSV file
-df = pd.read_csv('input.csv')
+df = pd.read_csv(input_file)
 
 # Initialize the WebDriver and configure timeout
 driver = setup()
@@ -115,4 +137,4 @@ for i, row in df.iterrows():
     scrape(df.loc[i].iloc[1])  # Scrape for the SMILES value in the current row
 
 teardown(driver)  # Close the WebDriver session
-df.to_csv('output.csv', index=False)  # Save the scraped data to CSV without the index column
+df.to_csv(output_file, index=False)  # Save the scraped data to CSV without the index column
