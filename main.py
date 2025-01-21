@@ -4,6 +4,7 @@ from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
 import argparse
 
+
 # Function to set up the webdriver and open the webpage
 def setup():
     """
@@ -34,7 +35,6 @@ def scrape(smiles):
         smiles (str): The SMILES representation of a chemical compound.
     """
     job_name = "Job"  # Placeholder job name
-
     try:
         # Find the input fields and buttons on the webpage
         job_name_input = driver.find_element(by=By.ID, value="jobName")
@@ -74,8 +74,6 @@ def scrape(smiles):
                 by=By.ID, value="ext-gen123").find_elements(
                 by=By.CSS_SELECTOR, value="tbody")  # Extract receptor list
 
-            tmp_list = []  # Temporary list to store receptor data
-
             # Loop through each receptor and extract bitter ID and probability
             for i in range(len(receptor_list)):
                 # Find bitter ID using dynamic XPath
@@ -97,21 +95,23 @@ def scrape(smiles):
         driver.back()
 
     except NoSuchElementException:
-        # In case of an element not found, try to go back and scrape again
+        # In case of an element not found, go back and print "Exception Occurred"
         driver.back()
-        scrape(smiles)
+        print("Exception Occurred")
 
 
-# default files
+# default files and timeout
 input_file = "input.csv"
 output_file = "output.csv"
+time = 900
 
 # Initialize command line parser
 parser = argparse.ArgumentParser()
 
 # Add optional arguments
-parser.add_argument("-i", "--Input", help = "Input File")
-parser.add_argument("-o", "--Output", help = "Output File")
+parser.add_argument("-i", "--Input", help="Input File, default is \"input.csv\"")
+parser.add_argument("-o", "--Output", help="Output File, default is \"output.csv\"")
+parser.add_argument("-t", "--Time", help="Timeout Time in Seconds, default is 900s(15 min)")
 
 # Read arguments from command line
 args = parser.parse_args()
@@ -123,13 +123,16 @@ if args.Input:
 if args.Output:
     output_file = args.Output
     print("Output File: % s" % args.Output)
+if args.Time:
+    time = args.Time
+    print("Timeout: % s" % args.Time)
 
 # Read the input data from a CSV file
 df = pd.read_csv(input_file)
 
 # Initialize the WebDriver and configure timeout
 driver = setup()
-driver.implicitly_wait(60)  # Set implicit wait to handle slow page loads and job runtime
+driver.implicitly_wait(time)  # Set implicit wait to handle slow page loads and job runtime
 
 # Loop through each row in the input DataFrame and scrape data
 for i, row in df.iterrows():
