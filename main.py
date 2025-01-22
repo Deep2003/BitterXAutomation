@@ -27,12 +27,12 @@ def teardown(driver):
     driver.quit()  # Close the WebDriver session
 
 
-# Function to scrape data for a given SMILES string
-def scrape(smiles):
+# Function to handle the main page
+def main_page(smiles):
     """
-    Scrapes data from the webpage based on the provided SMILES string.
-    Args:
-        smiles (str): The SMILES representation of a chemical compound.
+        Scrapes the main page, inputs necessary data, and navigates to second page
+        Args:
+            smiles: string of the molecular smiles.
     """
     job_name = "Job"  # Placeholder job name
     try:
@@ -53,14 +53,47 @@ def scrape(smiles):
             by=By.CSS_SELECTOR, value="button")[1]  # Second button in the list
         view_job_button.click()
 
+        # Continue to the second page
+        second_page_handler(smiles)
+
+    except NoSuchElementException:
+        # Retry in event of exception
+        main_page(smiles)
+
+
+# Function to find the button on the second page
+def second_page_button():
+    """
+        Scrapes the second page to find the button
+        Returns: Button
+    """
+    try:
         # Locate the button for checking the result
         button = driver.find_element(
             by=By.XPATH,
             value="/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div[1]/div[2]/div/div/table/tbody/tr/td[8]/div/input")
+        return button
+    except NoSuchElementException:
+        # Refresh page and try to find button again if button not found
+        driver.refresh()
+        return second_page_button()
 
+
+# Function to handle the second page
+def second_page_handler(smiles):
+    """
+        Scrapes the second page
+        Args:
+            smiles: string of molecular smiles
+    """
+
+    # Call helper method to find button
+    button = second_page_button()
+    try:
         # If an error occurred for this job, print the error message and return
-        if 'Error' in button.accessible_name:
-            print(button.text)
+        if 'Error' in button.accesible_name:
+            print(button.accesible_name)
+            driver.back()
             return
 
         # Check if the compound is bitter
@@ -70,40 +103,55 @@ def scrape(smiles):
 
         if is_bitter == "Yes":  # If the compound is bitter, proceed to extract data
             button.click()  # Click the button to reveal more information
-            receptor_list = driver.find_element(
-                by=By.ID, value="ext-gen123").find_elements(
-                by=By.CSS_SELECTOR, value="tbody")  # Extract receptor list
+            final_page(smiles)  # Call method to proceed with final page scraping
 
-            # Loop through each receptor and extract bitter ID and probability
-            for i in range(len(receptor_list)):
-                # Find bitter ID using dynamic XPath
-                tmp_xpath = f"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[{i + 1}]/table/tbody/tr/td[3]/div/a/span"
-                bitter_id = driver.find_element(by=By.XPATH, value=tmp_xpath).text.strip()
+        driver.back()    # Navigate driver back to home page
+    except NoSuchElementException:
+        # Refresh and retry if an exception occurs
+        driver.refresh()
+        second_page_handler(smiles)
 
-                # Find probability using dynamic XPath
-                tmp_xpath = f"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[{i + 1}]/table/tbody/tr/td[8]/div/span"
-                probability = driver.find_element(by=By.XPATH, value=tmp_xpath).text.strip()
+# Function to handle the final page
+def final_page(smiles):
+    """
+            Scrapes the final page
+            Args:
+                smiles: string of molecular smiles
+    """
+    try:
+        # Extract receptor list
+        receptor_list = driver.find_element(
+            by=By.XPATH,
+            value="/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div[2]/div[2]/div/div[1]/div[2]").find_elements(
+            by=By.CSS_SELECTOR, value="tbody")  
 
-                # Add new columns to DataFrame if not already present
-                if bitter_id not in df.columns:
-                    df[bitter_id] = 'NA'  # Set default value to 'NA'
+        # Loop through each receptor and extract bitter ID and probability
+        for i in range(len(receptor_list)):
+            # Find bitter ID using dynamic XPath
+            tmp_xpath = f"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[{i + 1}]/table/tbody/tr/td[3]/div/a/span"
+            bitter_id = driver.find_element(by=By.XPATH, value=tmp_xpath).text.strip()
 
-                # Store the probability value for the given SMILES
-                df.loc[df["SMILES"] == smiles, bitter_id] = probability
+            # Find probability using dynamic XPath
+            tmp_xpath = f"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/div/div/div/div[2]/div/div[2]/div/div/div/div/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[{i + 1}]/table/tbody/tr/td[8]/div/span"
+            probability = driver.find_element(by=By.XPATH, value=tmp_xpath).text.strip()
 
-        # Go back to the main page
-        driver.back()
+            # Add new columns to DataFrame if not already present
+            if bitter_id not in df.columns:
+                df[bitter_id] = 'NA'  # Set default value to 'NA'
+
+            # Store the probability value for the given SMILES
+            df.loc[df["SMILES"] == smiles, bitter_id] = probability
 
     except NoSuchElementException:
-        # In case of an element not found, go back and print "Exception Occurred"
-        driver.back()
-        print("Exception Occurred")
+        # Refresh and retry if an exception occurs
+        driver.refresh()
+        final_page(smiles)
 
 
 # default files and timeout
 input_file = "input.csv"
 output_file = "output.csv"
-time = 900
+time = 30
 
 # Initialize command line parser
 parser = argparse.ArgumentParser()
@@ -111,7 +159,7 @@ parser = argparse.ArgumentParser()
 # Add optional arguments
 parser.add_argument("-i", "--Input", help="Input File, default is \"input.csv\"")
 parser.add_argument("-o", "--Output", help="Output File, default is \"output.csv\"")
-parser.add_argument("-t", "--Time", help="Timeout Time in Seconds, default is 900s(15 min)")
+parser.add_argument("-t", "--Time", help="Timeout Time in Seconds, default is 30s")
 
 # Read arguments from command line
 args = parser.parse_args()
@@ -137,7 +185,7 @@ driver.implicitly_wait(time)  # Set implicit wait to handle slow page loads and 
 # Loop through each row in the input DataFrame and scrape data
 for i, row in df.iterrows():
     print(i + 2)  # Print row index for progress tracking
-    scrape(df.loc[i].iloc[1])  # Scrape for the SMILES value in the current row
+    main_page(df.loc[i].iloc[1])
 
 teardown(driver)  # Close the WebDriver session
-df.to_csv(output_file, index=False)  # Save the scraped data to CSV without the index column
+df.to_csv(output_file, index=False)  # Save the scraped data to CSV
