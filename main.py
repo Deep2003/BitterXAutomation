@@ -91,8 +91,8 @@ def second_page_handler(smiles):
     button = second_page_button()
     try:
         # If an error occurred for this job, print the error message and return
-        if 'Error' in button.accesible_name:
-            print(button.accesible_name)
+        if 'Error' in button.accessible_name:
+            print(button.accessible_name)
             driver.back()
             return
 
