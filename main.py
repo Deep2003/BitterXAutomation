@@ -176,7 +176,7 @@ if args.Time:
     print("Timeout: % s" % args.Time)
 
 # Read the input data from a CSV file
-df = pd.read_csv(input_file)
+df = pd.read_csv(input_file, encoding="ISO-8859-1")
 
 # Initialize the WebDriver and configure timeout
 driver = setup()
